@@ -10,6 +10,8 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Tesseract.js Library untuk Real OCR -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
     <style>
         :root {
             --primary: #6366f1;
@@ -311,6 +313,54 @@
             margin-top: 8px;
         }
 
+        /* Kamera Live OCR Styling */
+        .camera-wrapper {
+            margin-bottom: 22px;
+            text-align: center;
+            background: #0f172a;
+            border-radius: var(--radius-md);
+            padding: 16px;
+            color: white;
+        }
+
+        #video-container {
+            position: relative;
+            display: inline-block;
+            width: 100%;
+            max-width: 500px;
+            border-radius: var(--radius-md);
+            overflow: hidden;
+            background: #000;
+        }
+
+        video {
+            width: 100%;
+            display: block;
+        }
+
+        .scan-overlay {
+            position: absolute;
+            top: 20%;
+            left: 10%;
+            width: 80%;
+            height: 60%;
+            border: 3px dashed #10b981;
+            box-sizing: border-box;
+            pointer-events: none;
+            border-radius: var(--radius-sm);
+        }
+
+        #status-ocr {
+            font-weight: bold;
+            margin: 10px 0;
+            color: #38bdf8;
+            font-size: 14px;
+        }
+
+        canvas {
+            display: none;
+        }
+
         /* Details Accordion */
         details {
             background: #ffffff;
@@ -473,7 +523,7 @@
         </h1>
         <p class="header-subtitle">Sistem Koreksi Otomatis Pilihan Ganda & Uraian Berbasis Web</p>
         <div class="header-author">
-            <i data-lucide="code-2" style="width: 16px; height: 16px;"></i> @Pengembang: Supriyanto
+            <i data-lucide="code-2" style="width: 16px; height: 16px;"></i> Pengembang: Supriyanto
         </div>
     </div>
 
@@ -532,12 +582,30 @@
             <span>2. Input / Scan Lembar Jawab Siswa</span>
         </div>
         
-        <div class="file-upload" onclick="document.getElementById('fileScan').click()">
-            <i data-lucide="upload-cloud" style="width: 42px; height: 42px; color: var(--primary);"></i>
-            <p>Klik di sini untuk Unggah Foto / Hasil Scan LJK (Simulasi OCR)</p>
-            <input type="file" id="fileScan" accept="image/*" style="display:none" onchange="prosesScan(this)">
+        <!-- Live Camera OCR Section -->
+        <div class="camera-wrapper">
+            <div id="video-container">
+                <video id="webcam" autoplay playsinline></video>
+                <div class="scan-overlay"></div>
+            </div>
+            <div id="status-ocr">Kamera siap digunakan. Klik "Buka Kamera" untuk pindaian akurat.</div>
+            <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-top: 10px;">
+                <button type="button" class="btn" onclick="startCamera()">
+                    <i data-lucide="camera" style="width:18px;"></i> Buka Kamera
+                </button>
+                <button type="button" class="btn btn-success" onclick="captureAndOCR()">
+                    <i data-lucide="scan" style="width:18px;"></i> Pindai Tulisan (OCR)
+                </button>
+            </div>
+            <canvas id="ocr-canvas"></canvas>
         </div>
 
+        <div class="file-upload" onclick="document.getElementById('fileScan').click()">
+            <i data-lucide="upload-cloud" style="width: 42px; height: 42px; color: var(--primary);"></i>
+            <p>Atau Klik di sini untuk Unggah Foto File LJK (Simulasi Scanner)</p>
+            <input type="file" id="fileScan" accept="image/*" style="display:none" onchange="prosesScan(this)">
+        </div>
+        
         <div class="divider-text">
             <span>Atau Input Manual Jawaban Siswa</span>
         </div>
@@ -553,9 +621,9 @@
             </div>
         </div>
 
-        <details>
+        <details id="details-input-manual">
             <summary>
-                <i data-lucide="edit-3" style="width:18px;"></i> Tampilkan Form Input Manual Jawaban Siswa
+                <i data-lucide="edit-3" style="width:18px;"></i> Tampilkan Form Input Manual / Hasil Pindaian
             </summary>
             <p class="subtitle-form">Jawaban PG Siswa</p>
             <div class="grid-pg" id="inputSiswaPG"></div>
@@ -610,6 +678,63 @@
 
 <script>
     let dataHasil = [];
+    let videoStream = null;
+
+    // FUNGSI KAMERA & OCR (Tesseract.js)
+    async function startCamera() {
+        const video = document.getElementById('webcam');
+        const status = document.getElementById('status-ocr');
+        try {
+            videoStream = await navigator.mediaDevices.getUserMedia({
+                video: { facingMode: "environment" }
+            });
+            video.srcObject = videoStream;
+            status.innerText = "Kamera aktif. Posisikan tulisan LJK di dalam kotak hijau.";
+        } catch (err) {
+            alert("Gagal mengkoneksikan ke kamera: " + err.message);
+            status.innerText = "Akses kamera ditolak atau tidak tersedia.";
+        }
+    }
+
+    async function captureAndOCR() {
+        const video = document.getElementById('webcam');
+        const canvas = document.getElementById('ocr-canvas');
+        const status = document.getElementById('status-ocr');
+
+        if (!video.srcObject) {
+            alert("Aktifkan kamera terlebih dahulu!");
+            return;
+        }
+
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+        status.innerText = "Membaca & Memproses Teks (OCR)... Mohon Tunggu...";
+
+        try {
+            const { data: { text } } = await Tesseract.recognize(
+                canvas,
+                'ind', // Bahasa Indonesia
+                { logger: m => console.log(m) }
+            );
+
+            status.innerText = "Pindaian Berhasil!";
+            
+            // Masukkan teks hasil pindaian ke dalam area jawaban uraian pertama jika ada
+            const targetUraian = document.getElementById('su_teks_1');
+            if (targetUraian) {
+                targetUraian.value = text.trim();
+            }
+
+            document.getElementById('details-input-manual').open = true;
+            alert("Teks berhasil dibaca dan dimasukkan ke form jawaban uraian!");
+        } catch (err) {
+            status.innerText = "Gagal memindai teks.";
+            alert("Gagal memproses OCR: " + err.message);
+        }
+    }
 
     function generateFormSoal() {
         const jmlPG = parseInt(document.getElementById('jmlPG').value) || 20;
