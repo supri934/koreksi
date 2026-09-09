@@ -1,0 +1,818 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistem Koreksi Lembar Jawab Digital</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-hover: #4f46e5;
+            --primary-light: #e0e7ff;
+            --secondary: #ec4899;
+            --success: #10b981;
+            --success-hover: #059669;
+            --card-bg: rgba(255, 255, 255, 0.90);
+            --card-border: rgba(255, 255, 255, 0.8);
+            --text-main: #0f172a;
+            --text-muted: #475569;
+            --border-color: #cbd5e1;
+            --radius-lg: 24px;
+            --radius-md: 12px;
+            --radius-sm: 8px;
+            --shadow-glass: 0 20px 40px rgba(0, 0, 0, 0.12);
+            --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.03);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        /* BACKGROUND BERWARNA VIBRANT & DINAMIS */
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background-color: #4f46e5;
+            background-image: 
+                radial-gradient(at 0% 0%, #818cf8 0px, transparent 50%),
+                radial-gradient(at 100% 0%, #c084fc 0px, transparent 50%),
+                radial-gradient(at 100% 100%, #f472b6 0px, transparent 50%),
+                radial-gradient(at 0% 100%, #38bdf8 0px, transparent 50%),
+                radial-gradient(at 50% 50%, #34d399 0px, transparent 50%);
+            background-attachment: fixed;
+            background-size: cover;
+            color: var(--text-main);
+            padding: 50px 20px 30px;
+            min-height: 100vh;
+            line-height: 1.5;
+        }
+
+        .container {
+            max-width: 1050px;
+            margin: 0 auto;
+        }
+
+        /* Header Styling */
+        .header {
+            text-align: center;
+            margin-bottom: 35px;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            padding: 24px 20px;
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--card-border);
+            box-shadow: var(--shadow-glass);
+        }
+
+        .header-title {
+            font-size: 32px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #312e81 0%, #4338ca 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: -0.8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        .header-subtitle {
+            font-size: 15px;
+            color: var(--text-muted);
+            margin-top: 6px;
+            font-weight: 600;
+        }
+
+        .header-author {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 10px;
+            padding: 4px 14px;
+            background: var(--primary-light);
+            color: var(--primary-hover);
+            border-radius: 20px;
+            font-size: 13px;
+            font-weight: 700;
+        }
+
+        /* Glassmorphism Section Card */
+        .section {
+            background: var(--card-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: var(--radius-lg);
+            padding: 32px;
+            margin-bottom: 28px;
+            border: 1px solid var(--card-border);
+            box-shadow: var(--shadow-glass);
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .section:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
+        }
+
+        .section-title {
+            font-size: 19px;
+            font-weight: 700;
+            color: var(--text-main);
+            margin-bottom: 22px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            border-bottom: 2px solid #e2e8f0;
+            padding-bottom: 14px;
+        }
+
+        .section-title i {
+            color: #ffffff;
+            background: linear-gradient(135deg, var(--primary) 0%, #a855f7 100%);
+            padding: 8px;
+            border-radius: var(--radius-sm);
+            box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);
+        }
+
+        /* Form Grid Layouts */
+        .grid-config {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+            margin-bottom: 22px;
+        }
+
+        .grid-pg {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 12px;
+            margin-bottom: 20px;
+            max-height: 230px;
+            overflow-y: auto;
+            padding: 14px;
+            background: rgba(241, 245, 249, 0.9);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+        }
+
+        /* Container Uraian Modern */
+        .grid-uraian-container {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            margin-bottom: 22px;
+            max-height: 420px;
+            overflow-y: auto;
+            padding: 14px;
+            background: rgba(241, 245, 249, 0.9);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+        }
+
+        .card-uraian-item {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-left: 5px solid var(--primary);
+            border-radius: var(--radius-md);
+            padding: 18px;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            box-shadow: var(--shadow-card);
+        }
+
+        .card-uraian-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 700;
+            font-size: 14px;
+            color: var(--primary-hover);
+        }
+
+        .card-uraian-body {
+            display: grid;
+            grid-template-columns: 1fr 140px;
+            gap: 14px;
+        }
+
+        /* Scrollbar Styling */
+        .grid-pg::-webkit-scrollbar, .grid-uraian-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        .grid-pg::-webkit-scrollbar-thumb, .grid-uraian-container::-webkit-scrollbar-thumb {
+            background: #94a3b8;
+            border-radius: 10px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .input-group label {
+            font-size: 13px;
+            font-weight: 700;
+            color: var(--text-muted);
+        }
+
+        input[type="text"],
+        input[type="number"],
+        textarea,
+        select {
+            padding: 11px 16px;
+            border: 1.5px solid var(--border-color);
+            border-radius: var(--radius-md);
+            font-size: 14px;
+            font-family: inherit;
+            color: var(--text-main);
+            background-color: #ffffff;
+            outline: none;
+            transition: all 0.2s ease;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 48px;
+        }
+
+        input:focus, textarea:focus, select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+        }
+
+        /* Buttons */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            background: linear-gradient(135deg, var(--primary) 0%, #4f46e5 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 14px;
+            font-weight: 700;
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 18px rgba(79, 70, 229, 0.45);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
+        }
+
+        .btn-success:hover {
+            box-shadow: 0 6px 18px rgba(16, 185, 129, 0.45);
+        }
+
+        .btn-block {
+            width: 100%;
+        }
+
+        /* Upload Zone */
+        .file-upload {
+            border: 2px dashed #6366f1;
+            padding: 36px 20px;
+            text-align: center;
+            background: rgba(238, 242, 255, 0.8);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-bottom: 22px;
+        }
+
+        .file-upload:hover {
+            background: rgba(224, 231, 255, 0.95);
+            transform: scale(1.005);
+        }
+
+        .file-upload p {
+            font-size: 15px;
+            font-weight: 700;
+            color: var(--primary-hover);
+            margin-top: 8px;
+        }
+
+        /* Details Accordion */
+        details {
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 14px 18px;
+            margin-bottom: 22px;
+            box-shadow: var(--shadow-card);
+        }
+
+        summary {
+            cursor: pointer;
+            color: var(--primary-hover);
+            font-weight: 700;
+            font-size: 14px;
+            outline: none;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        /* Divider Text */
+        .divider-text {
+            text-align: center;
+            position: relative;
+            margin: 24px 0;
+        }
+
+        .divider-text::before {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: var(--border-color);
+            z-index: 1;
+        }
+
+        .divider-text span {
+            position: relative;
+            z-index: 2;
+            background: #ffffff;
+            padding: 6px 18px;
+            border-radius: 20px;
+            border: 1px solid var(--border-color);
+            font-size: 12px;
+            color: var(--text-muted);
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .subtitle-form {
+            font-size: 13px;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 0.8px;
+            color: var(--text-muted);
+            margin: 18px 0 10px 0;
+        }
+
+        /* Table Styling */
+        .table-responsive {
+            overflow-x: auto;
+            border-radius: var(--radius-md);
+            border: 1px solid var(--border-color);
+            background: #ffffff;
+            box-shadow: var(--shadow-card);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        th, td {
+            padding: 16px 18px;
+            font-size: 13.5px;
+        }
+
+        th {
+            background-color: #f8fafc;
+            color: var(--text-muted);
+            font-weight: 800;
+            text-transform: uppercase;
+            font-size: 11px;
+            letter-spacing: 0.8px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        td {
+            border-bottom: 1px solid #f1f5f9;
+            color: var(--text-main);
+        }
+
+        tbody tr:last-child td {
+            border-bottom: none;
+        }
+
+        tbody tr:hover {
+            background-color: #f8fafc;
+        }
+
+        .badge-score {
+            display: inline-block;
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-weight: 800;
+            background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+            color: #3730a3;
+        }
+
+        .flex-between {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 18px;
+        }
+
+        /* Footer Styling */
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-radius: var(--radius-lg);
+            border: 1px solid var(--card-border);
+            box-shadow: var(--shadow-glass);
+            font-size: 14px;
+            font-weight: 600;
+            color: var(--text-muted);
+        }
+
+        .footer .developer-name {
+            color: var(--primary-hover);
+            font-weight: 800;
+        }
+
+        @media (max-width: 640px) {
+            body { padding: 20px 12px; }
+            .section { padding: 20px; }
+            .grid-config { grid-template-columns: 1fr; }
+            .card-uraian-body { grid-template-columns: 1fr; }
+            .flex-between { flex-direction: column; align-items: flex-start; gap: 12px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- HEADER -->
+    <div class="header">
+        <h1 class="header-title">
+            <i data-lucide="check-circle-2" style="width: 36px; height: 36px; color: var(--primary);"></i>
+            Koreksi Lembar Jawab Digital
+        </h1>
+        <p class="header-subtitle">Sistem Koreksi Otomatis Pilihan Ganda & Uraian Berbasis Web</p>
+        <div class="header-author">
+            <i data-lucide="code-2" style="width: 16px; height: 16px;"></i> Pengembang: Supriyanto
+        </div>
+    </div>
+
+    <!-- KONFIGURASI UJIAN -->
+    <div class="section">
+        <div class="section-title">
+            <i data-lucide="sliders"></i>
+            <span> Konfigurasi Ujian & Mata Pelajaran</span>
+        </div>
+        <div class="grid-config">
+            <div class="input-group">
+                <label for="namaMapel">Mata Pelajaran</label>
+                <input type="text" id="namaMapel" value="Matematika" placeholder="Contoh: Matematika">
+            </div>
+            <div class="input-group">
+                <label for="kelasUjian">Kelas / Sesi</label>
+                <input type="text" id="kelasUjian" value="XII IPA 1" placeholder="Contoh: XII IPA 1">
+            </div>
+            <div class="input-group">
+                <label for="jmlPG">Jumlah Soal PG</label>
+                <input type="number" id="jmlPG" value="20" min="1" max="50" onchange="generateFormSoal()">
+            </div>
+            <div class="input-group">
+                <label for="jmlUraian">Jumlah Soal Uraian</label>
+                <input type="number" id="jmlUraian" value="5" min="0" max="20" onchange="generateFormSoal()">
+            </div>
+        </div>
+        <button type="button" class="btn btn-success" onclick="generateFormSoal()">
+            <i data-lucide="refresh-cw" style="width:18px;"></i> Terapkan Format Soal
+        </button>
+    </div>
+
+    <!-- 1. INPUT KUNCI JAWABAN -->
+    <div class="section">
+        <div class="section-title">
+            <i data-lucide="key-round"></i>
+            <span>1. Input Kunci Jawaban & Rubrik Penskoran</span>
+        </div>
+        <form id="formKunci">
+            <p class="subtitle-form">Pilihan Ganda (Opsi A/B/C/D/E)</p>
+            <div class="grid-pg" id="kunciPG"></div>
+
+            <p class="subtitle-form">Uraian (Kunci Teks / Rubrik & Max Bobot)</p>
+            <div class="grid-uraian-container" id="kunciUraian"></div>
+
+            <button type="button" class="btn btn-success" onclick="simpanKunci()">
+                <i data-lucide="save" style="width:18px;"></i> Simpan Kunci Jawaban
+            </button>
+        </form>
+    </div>
+
+    <!-- 2. SCAN / INPUT LEMBAR JAWAB -->
+    <div class="section">
+        <div class="section-title">
+            <i data-lucide="scan-line"></i>
+            <span>2. Input / Scan Lembar Jawab Siswa</span>
+        </div>
+        
+        <div class="file-upload" onclick="document.getElementById('fileScan').click()">
+            <i data-lucide="upload-cloud" style="width: 42px; height: 42px; color: var(--primary);"></i>
+            <p>Klik di sini untuk Unggah Foto / Hasil Scan LJK (Simulasi OCR)</p>
+            <input type="file" id="fileScan" accept="image/*" style="display:none" onchange="prosesScan(this)">
+        </div>
+
+        <div class="divider-text">
+            <span>Atau Input Manual Jawaban Siswa</span>
+        </div>
+        
+        <div style="margin-bottom: 18px; display: flex; gap: 14px; flex-wrap: wrap;">
+            <div class="input-group" style="flex: 2; min-width: 200px;">
+                <label for="namaSiswa">Nama Siswa</label>
+                <input type="text" id="namaSiswa" placeholder="Masukkan Nama Siswa">
+            </div>
+            <div class="input-group" style="flex: 1; min-width: 120px;">
+                <label for="nisSiswa">NIS</label>
+                <input type="text" id="nisSiswa" placeholder="Masukkan NIS">
+            </div>
+        </div>
+
+        <details>
+            <summary>
+                <i data-lucide="edit-3" style="width:18px;"></i> Tampilkan Form Input Manual Jawaban Siswa
+            </summary>
+            <p class="subtitle-form">Jawaban PG Siswa</p>
+            <div class="grid-pg" id="inputSiswaPG"></div>
+
+            <p class="subtitle-form">Penilaian Uraian Siswa (0 - Max Bobot)</p>
+            <div class="grid-uraian-container" id="inputSiswaUraian"></div>
+        </details>
+
+        <button type="button" class="btn btn-block" onclick="koreksiUjian()">
+            <i data-lucide="cpu" style="width:18px;"></i> Proses & Koreksi Jawaban
+        </button>
+    </div>
+
+    <!-- 3. HASIL KOREKSI -->
+    <div class="section">
+        <div class="flex-between">
+            <div class="section-title" style="margin-bottom: 0; border-bottom: none; padding-bottom: 0;">
+                <i data-lucide="bar-chart-3"></i>
+                <span>Rekapitulasi Hasil Koreksi (<span id="labelMapelTabel" style="color: var(--primary);">Matematika</span>)</span>
+            </div>
+            <button type="button" class="btn btn-success" onclick="exportToExcel()">
+                <i data-lucide="file-spreadsheet" style="width:18px;"></i> Ekspor ke Excel (CSV)
+            </button>
+        </div>
+
+        <div class="table-responsive" style="margin-top: 18px;">
+            <table id="tabelHasil">
+                <thead>
+                    <tr>
+                        <th style="text-align: center;">No</th>
+                        <th>NIS</th>
+                        <th>Nama Siswa</th>
+                        <th>Mapel</th>
+                        <th style="text-align: center;">Benar PG</th>
+                        <th style="text-align: center;">Nilai PG</th>
+                        <th style="text-align: center;">Nilai Uraian</th>
+                        <th style="text-align: center;">Nilai Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <!-- Data hasil koreksi masuk disini -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- FOOTER / KREDIT PEMBUAT -->
+    <div class="footer">
+        Dibuat dan Dikembangkan oleh <span class="developer-name">Supriyanto</span> &copy; 2026. All Rights Reserved.
+    </div>
+</div>
+
+<script>
+    let dataHasil = [];
+
+    function generateFormSoal() {
+        const jmlPG = parseInt(document.getElementById('jmlPG').value) || 20;
+        const jmlUraian = parseInt(document.getElementById('jmlUraian').value) || 5;
+        const mapel = document.getElementById('namaMapel').value;
+        
+        document.getElementById('labelMapelTabel').innerText = mapel;
+
+        const kunciPGContainer = document.getElementById('kunciPG');
+        const kunciUraianContainer = document.getElementById('kunciUraian');
+        const inputSiswaPGContainer = document.getElementById('inputSiswaPG');
+        const inputSiswaUraianContainer = document.getElementById('inputSiswaUraian');
+
+        kunciPGContainer.innerHTML = "";
+        kunciUraianContainer.innerHTML = "";
+        inputSiswaPGContainer.innerHTML = "";
+        inputSiswaUraianContainer.innerHTML = "";
+
+        // 1. Generate Form Pilihan Ganda
+        for (let i = 1; i <= jmlPG; i++) {
+            kunciPGContainer.innerHTML += `
+                <div class="input-group">
+                    <label>PG ${i}</label>
+                    <select id="kp_${i}">
+                        <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option><option value="E">E</option>
+                    </select>
+                </div>`;
+            inputSiswaPGContainer.innerHTML += `
+                <div class="input-group">
+                    <label>PG ${i}</label>
+                    <select id="sp_${i}">
+                        <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option><option value="E">E</option>
+                    </select>
+                </div>`;
+        }
+
+        // 2. Generate Form Uraian
+        if (jmlUraian > 0) {
+            for (let i = 1; i <= jmlUraian; i++) {
+                kunciUraianContainer.innerHTML += `
+                    <div class="card-uraian-item">
+                        <div class="card-uraian-header">
+                            <span><i data-lucide="file-text" style="width:16px; vertical-align:-3px;"></i> Soal Uraian #${i}</span>
+                        </div>
+                        <div class="card-uraian-body">
+                            <div class="input-group">
+                                <label for="kunci_teks_u_${i}">Teks Kunci Jawaban / Pedoman Penskoran</label>
+                                <textarea id="kunci_teks_u_${i}" placeholder="Tuliskan kata kunci jawaban atau kriteria penilaian..."></textarea>
+                            </div>
+                            <div class="input-group">
+                                <label for="ku_${i}">Bobot Max</label>
+                                <input type="number" id="ku_${i}" value="10" min="1" max="100">
+                            </div>
+                        </div>
+                    </div>`;
+
+                inputSiswaUraianContainer.innerHTML += `
+                    <div class="card-uraian-item">
+                        <div class="card-uraian-header">
+                            <span><i data-lucide="user-check" style="width:16px; vertical-align:-3px;"></i> Nilai Uraian #${i}</span>
+                        </div>
+                        <div class="card-uraian-body">
+                            <div class="input-group">
+                                <label for="su_teks_${i}">Jawaban Siswa (Opsional/Teks Scan)</label>
+                                <textarea id="su_teks_${i}" placeholder="Jawaban teks siswa..."></textarea>
+                            </div>
+                            <div class="input-group">
+                                <label for="su_${i}">Nilai Siswa</label>
+                                <input type="number" id="su_${i}" value="0" min="0" max="100" placeholder="0 - Max">
+                            </div>
+                        </div>
+                    </div>`;
+            }
+        } else {
+            kunciUraianContainer.innerHTML = "<p style='font-size:13px; color:var(--text-muted); padding:10px;'>Tidak ada soal uraian.</p>";
+            inputSiswaUraianContainer.innerHTML = "<p style='font-size:13px; color:var(--text-muted); padding:10px;'>Tidak ada soal uraian.</p>";
+        }
+        
+        lucide.createIcons();
+    }
+
+    function simpanKunci() {
+        let mapel = document.getElementById('namaMapel').value;
+        alert(`Kunci jawaban & rubrik uraian untuk "${mapel}" berhasil disimpan!`);
+    }
+
+    function prosesScan(input) {
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const jmlPG = parseInt(document.getElementById('jmlPG').value) || 20;
+                const jmlUraian = parseInt(document.getElementById('jmlUraian').value) || 5;
+
+                document.getElementById('namaSiswa').value = "Siswa Scan " + Math.floor(Math.random() * 100);
+                document.getElementById('nisSiswa').value = "2026" + Math.floor(100 + Math.random() * 900);
+                
+                for (let i = 1; i <= jmlPG; i++) {
+                    const opts = ['A', 'B', 'C', 'D', 'E'];
+                    document.getElementById(`sp_${i}`).value = opts[Math.floor(Math.random() * opts.length)];
+                }
+                for (let i = 1; i <= jmlUraian; i++) {
+                    let maxBobot = parseFloat(document.getElementById(`ku_${i}`).value) || 10;
+                    document.getElementById(`su_${i}`).value = Math.floor(Math.random() * (maxBobot + 1));
+                    
+                    let sampleTexts = ["Langkah penyelesaian sudah tepat", "Rumus benar, perhitungan kurang teliti", "Jawaban cukup lengkap"];
+                    document.getElementById(`su_teks_${i}`).value = sampleTexts[Math.floor(Math.random() * sampleTexts.length)];
+                }
+                alert("Lembar jawab berhasil dipindai melalui simulasi scanner/foto!");
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function koreksiUjian() {
+        let mapel = document.getElementById('namaMapel').value || "Umum";
+        let kelas = document.getElementById('kelasUjian').value || "-";
+        let nama = document.getElementById('namaSiswa').value || "Tanpa Nama";
+        let nis = document.getElementById('nisSiswa').value || "-";
+        
+        let jmlPG = parseInt(document.getElementById('jmlPG').value) || 20;
+        let jmlUraian = parseInt(document.getElementById('jmlUraian').value) || 5;
+
+        let benarPG = 0;
+        let totalNilaiUraian = 0;
+        let maxNilaiUraian = 0;
+
+        for (let i = 1; i <= jmlPG; i++) {
+            let kunci = document.getElementById(`kp_${i}`).value;
+            let jawaban = document.getElementById(`sp_${i}`).value;
+            if (kunci === jawaban) {
+                benarPG++;
+            }
+        }
+        let nilaiPG = jmlPG > 0 ? (benarPG / jmlPG) * 100 : 0;
+
+        if (jmlUraian > 0) {
+            for (let i = 1; i <= jmlUraian; i++) {
+                let maxBobot = parseFloat(document.getElementById(`ku_${i}`).value) || 10;
+                let nilaiSiswaUraian = parseFloat(document.getElementById(`su_${i}`).value) || 0;
+                totalNilaiUraian += nilaiSiswaUraian;
+                maxNilaiUraian += maxBobot;
+            }
+        }
+        let nilaiUraianFinal = maxNilaiUraian > 0 ? (totalNilaiUraian / maxNilaiUraian) * 100 : 100;
+
+        let nilaiTotal = jmlUraian > 0 ? (nilaiPG * 0.5) + (nilaiUraianFinal * 0.5) : nilaiPG;
+
+        dataHasil.push({
+            nis: nis,
+            nama: nama,
+            mapel: `${mapel} (${kelas})`,
+            benarPG: `${benarPG} / ${jmlPG}`,
+            nilaiPG: nilaiPG.toFixed(2),
+            nilaiUraian: jmlUraian > 0 ? nilaiUraianFinal.toFixed(2) : "N/A",
+            nilaiTotal: nilaiTotal.toFixed(2)
+        });
+
+        updateTabelHasil();
+        alert("Koreksi berhasil diproses!");
+    }
+
+    function updateTabelHasil() {
+        let tbody = document.querySelector('#tabelHasil tbody');
+        tbody.innerHTML = "";
+        dataHasil.forEach((item, index) => {
+            tbody.innerHTML += `
+                <tr>
+                    <td style="text-align: center; font-weight: 600;">${index + 1}</td>
+                    <td>${item.nis}</td>
+                    <td style="font-weight: 600;">${item.nama}</td>
+                    <td>${item.mapel}</td>
+                    <td style="text-align: center;">${item.benarPG}</td>
+                    <td style="text-align: center;">${item.nilaiPG}</td>
+                    <td style="text-align: center;">${item.nilaiUraian}</td>
+                    <td style="text-align: center;"><span class="badge-score">${item.nilaiTotal}</span></td>
+                </tr>`;
+        });
+    }
+
+    function exportToExcel() {
+        if (dataHasil.length === 0) {
+            alert("Belum ada data rekap untuk diexport!");
+            return;
+        }
+        let csvContent = "data:text/csv;charset=utf-8,No,NIS,Nama Siswa,Mata Pelajaran,Benar PG,Nilai PG,Nilai Uraian,Nilai Total\n";
+        dataHasil.forEach((row, index) => {
+            csvContent += `${index+1},${row.nis},"${row.nama}","${row.mapel}",${row.benarPG},${row.nilaiPG},${row.nilaiUraian},${row.nilaiTotal}\n`;
+        });
+
+        let encodedUri = encodeURI(csvContent);
+        let link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "rekap_nilai_mapel.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    window.onload = function() {
+        generateFormSoal();
+        lucide.createIcons();
+    };
+</script>
+
+</body>
+</html>
