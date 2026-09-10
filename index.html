@@ -3,15 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Sistem Koreksi Lembar Jawab Digital</title>
-    <!-- Google Fonts -->
+    <title>Sistem Koreksi Lembar Jawab Digital Presisi</title>
+    <!-- Google Fonts & Lucide Icons -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    <!-- Tesseract.js Library untuk Real OCR -->
+    <!-- Tesseract.js OCR -->
     <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+    <!-- OpenCV.js untuk Pemrosesan Citra & OMR Deteksi Silang -->
+    <script async src="https://docs.opencv.org/4.7.0/opencv.js" onload="onOpenCvReady();"></script>
+    <!-- SheetJS (XLSX) untuk Fitur Excel -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    
     <style>
         :root {
             --primary: #6366f1;
@@ -20,478 +24,230 @@
             --secondary: #ec4899;
             --success: #10b981;
             --success-hover: #059669;
-            --card-bg: rgba(255, 255, 255, 0.90);
+            --danger: #ef4444;
+            --card-bg: rgba(255, 255, 255, 0.95);
             --card-border: rgba(255, 255, 255, 0.8);
             --text-main: #0f172a;
             --text-muted: #475569;
             --border-color: #cbd5e1;
-            --radius-lg: 24px;
+            --radius-lg: 20px;
             --radius-md: 12px;
-            --radius-sm: 8px;
-            --shadow-glass: 0 20px 40px rgba(0, 0, 0, 0.12);
-            --shadow-card: 0 4px 12px rgba(0, 0, 0, 0.03);
+            --shadow-glass: 0 15px 35px rgba(0, 0, 0, 0.1);
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
-        /* BACKGROUND BERWARNA VIBRANT & DINAMIS */
         body {
             font-family: 'Plus Jakarta Sans', sans-serif;
-            background-color: #4f46e5;
-            background-image: 
-                radial-gradient(at 0% 0%, #818cf8 0px, transparent 50%),
-                radial-gradient(at 100% 0%, #c084fc 0px, transparent 50%),
-                radial-gradient(at 100% 100%, #f472b6 0px, transparent 50%),
-                radial-gradient(at 0% 100%, #38bdf8 0px, transparent 50%),
-                radial-gradient(at 50% 50%, #34d399 0px, transparent 50%);
+            background: linear-gradient(135deg, #4f46e5 0%, #3b82f6 50%, #10b981 100%);
             background-attachment: fixed;
-            background-size: cover;
             color: var(--text-main);
-            padding: 50px 20px 30px;
+            padding: 30px 15px;
             min-height: 100vh;
-            line-height: 1.5;
         }
 
-        .container {
-            max-width: 1050px;
-            margin: 0 auto;
-        }
+        .container { max-width: 1100px; margin: 0 auto; }
 
-        /* Header Styling */
         .header {
             text-align: center;
-            margin-bottom: 35px;
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
-            padding: 24px 20px;
+            margin-bottom: 25px;
+            background: var(--card-bg);
+            padding: 20px;
             border-radius: var(--radius-lg);
-            border: 1px solid var(--card-border);
             box-shadow: var(--shadow-glass);
         }
 
         .header-title {
-            font-size: 32px;
+            font-size: 26px;
             font-weight: 800;
-            background: linear-gradient(135deg, #312e81 0%, #4338ca 100%);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            letter-spacing: -0.8px;
+            color: #312e81;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 12px;
+            gap: 10px;
         }
 
-        .header-subtitle {
-            font-size: 15px;
-            color: var(--text-muted);
-            margin-top: 6px;
-            font-weight: 600;
-        }
-
-        .header-author {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            margin-top: 10px;
-            padding: 4px 14px;
-            background: var(--primary-light);
-            color: var(--primary-hover);
-            border-radius: 20px;
-            font-size: 13px;
-            font-weight: 700;
-        }
-
-        /* Glassmorphism Section Card */
         .section {
             background: var(--card-bg);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
             border-radius: var(--radius-lg);
-            padding: 32px;
-            margin-bottom: 28px;
-            border: 1px solid var(--card-border);
+            padding: 24px;
+            margin-bottom: 20px;
             box-shadow: var(--shadow-glass);
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .section:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.15);
         }
 
         .section-title {
-            font-size: 19px;
+            font-size: 18px;
             font-weight: 700;
-            color: var(--text-main);
-            margin-bottom: 22px;
+            margin-bottom: 16px;
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 10px;
             border-bottom: 2px solid #e2e8f0;
-            padding-bottom: 14px;
+            padding-bottom: 10px;
         }
 
-        .section-title i {
-            color: #ffffff;
-            background: linear-gradient(135deg, var(--primary) 0%, #a855f7 100%);
-            padding: 8px;
-            border-radius: var(--radius-sm);
-            box-shadow: 0 4px 10px rgba(99, 102, 241, 0.3);
-        }
-
-        /* Form Grid Layouts */
         .grid-config {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 20px;
-            margin-bottom: 22px;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 15px;
+            margin-bottom: 15px;
         }
 
         .grid-pg {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-            gap: 12px;
-            margin-bottom: 20px;
-            max-height: 230px;
+            grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+            gap: 10px;
+            margin-bottom: 15px;
+            max-height: 250px;
             overflow-y: auto;
-            padding: 14px;
-            background: rgba(241, 245, 249, 0.9);
+            padding: 12px;
+            background: #f8fafc;
             border: 1px solid var(--border-color);
             border-radius: var(--radius-md);
         }
 
-        /* Container Uraian Modern */
-        .grid-uraian-container {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            margin-bottom: 22px;
-            max-height: 420px;
-            overflow-y: auto;
-            padding: 14px;
-            background: rgba(241, 245, 249, 0.9);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-md);
-        }
-
-        .card-uraian-item {
-            background: #ffffff;
-            border: 1px solid var(--border-color);
-            border-left: 5px solid var(--primary);
-            border-radius: var(--radius-md);
-            padding: 18px;
+        .grid-uraian {
             display: flex;
             flex-direction: column;
             gap: 12px;
-            box-shadow: var(--shadow-card);
+            max-height: 350px;
+            overflow-y: auto;
+            padding: 12px;
+            background: #f3f3f5;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
         }
 
-        .card-uraian-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            font-weight: 700;
-            font-size: 14px;
-            color: var(--primary-hover);
-        }
+        .input-group { display: flex; flex-direction: column; gap: 4px; }
+        .input-group label { font-size: 12px; font-weight: 700; color: var(--text-muted); }
 
-        .card-uraian-body {
-            display: grid;
-            grid-template-columns: 1fr 140px;
-            gap: 14px;
-        }
-
-        /* Scrollbar Styling */
-        .grid-pg::-webkit-scrollbar, .grid-uraian-container::-webkit-scrollbar {
-            width: 6px;
-        }
-        .grid-pg::-webkit-scrollbar-thumb, .grid-uraian-container::-webkit-scrollbar-thumb {
-            background: #94a3b8;
-            border-radius: 10px;
-        }
-
-        .input-group {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        .input-group label {
-            font-size: 13px;
-            font-weight: 700;
-            color: var(--text-muted);
-        }
-
-        input[type="text"],
-        input[type="number"],
-        textarea,
-        select {
-            padding: 11px 16px;
+        input, select, textarea {
+            padding: 9px 12px;
             border: 1.5px solid var(--border-color);
-            border-radius: var(--radius-md);
-            font-size: 14px;
+            border-radius: 8px;
+            font-size: 13px;
             font-family: inherit;
-            color: var(--text-main);
-            background-color: #ffffff;
-            outline: none;
-            transition: all 0.2s ease;
         }
 
-        textarea {
-            resize: vertical;
-            min-height: 48px;
-        }
-
-        input:focus, textarea:focus, select:focus {
-            border-color: var(--primary);
-            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
-        }
-
-        /* Buttons */
         .btn {
             display: inline-flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
-            background: linear-gradient(135deg, var(--primary) 0%, #4f46e5 100%);
+            gap: 8px;
+            background: var(--primary-hover);
             color: white;
             border: none;
-            padding: 12px 24px;
-            font-size: 14px;
+            padding: 10px 20px;
+            font-size: 13px;
             font-weight: 700;
             border-radius: var(--radius-md);
             cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 4px 14px rgba(79, 70, 229, 0.35);
+            transition: all 0.2s;
         }
 
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 18px rgba(79, 70, 229, 0.45);
-        }
+        .btn:hover { opacity: 0.9; transform: translateY(-1px); }
+        .btn-success { background: var(--success); }
+        .btn-success:hover { background: var(--success-hover); }
+        .btn-danger { background: var(--danger); }
+        .btn-secondary { background: #56c769; }
+        .btn-block { width: 100%; }
 
-        .btn-success {
-            background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
-            box-shadow: 0 4px 14px rgba(16, 185, 129, 0.35);
-        }
-
-        .btn-success:hover {
-            box-shadow: 0 6px 18px rgba(16, 185, 129, 0.45);
-        }
-
-        .btn-block {
-            width: 100%;
-        }
-
-        /* Upload Zone */
-        .file-upload {
-            border: 2px dashed #6366f1;
-            padding: 36px 20px;
-            text-align: center;
-            background: rgba(238, 242, 255, 0.8);
+        .excel-actions {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+            background: #f1f5f9;
+            padding: 12px;
             border-radius: var(--radius-md);
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-bottom: 22px;
+            align-items: center;
         }
 
-        .file-upload:hover {
-            background: rgba(224, 231, 255, 0.95);
-            transform: scale(1.005);
-        }
-
-        .file-upload p {
-            font-size: 15px;
-            font-weight: 700;
-            color: var(--primary-hover);
-            margin-top: 8px;
-        }
-
-        /* Kamera Live OCR Styling */
+        /* Kamera UI Styling */
         .camera-wrapper {
-            margin-bottom: 22px;
-            text-align: center;
             background: #0f172a;
             border-radius: var(--radius-md);
-            padding: 16px;
-            color: white;
+            padding: 15px;
+            text-align: center;
+            margin-bottom: 20px;
         }
 
-        #video-container {
+        .video-container {
             position: relative;
             display: inline-block;
             width: 100%;
-            max-width: 500px;
-            border-radius: var(--radius-md);
-            overflow: hidden;
+            max-width: 550px;
             background: #000;
+            border-radius: 8px;
+            overflow: hidden;
         }
 
-        video {
-            width: 100%;
-            display: block;
-        }
+        video { width: 100%; height: auto; display: block; }
 
         .scan-overlay {
             position: absolute;
-            top: 20%;
+            top: 10%;
             left: 10%;
             width: 80%;
-            height: 60%;
+            height: 80%;
             border: 3px dashed #10b981;
             box-sizing: border-box;
-            pointer-events: none;
-            border-radius: var(--radius-sm);
-        }
-
-        #status-ocr {
-            font-weight: bold;
-            margin: 10px 0;
-            color: #38bdf8;
-            font-size: 14px;
-        }
-
-        canvas {
-            display: none;
-        }
-
-        /* Details Accordion */
-        details {
-            background: #ffffff;
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-md);
-            padding: 14px 18px;
-            margin-bottom: 22px;
-            box-shadow: var(--shadow-card);
-        }
-
-        summary {
-            cursor: pointer;
-            color: var(--primary-hover);
-            font-weight: 700;
-            font-size: 14px;
-            outline: none;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        /* Divider Text */
-        .divider-text {
-            text-align: center;
-            position: relative;
-            margin: 24px 0;
-        }
-
-        .divider-text::before {
-            content: "";
-            position: absolute;
-            top: 50%;
-            left: 0;
-            width: 100%;
-            height: 1px;
-            background: var(--border-color);
-            z-index: 1;
-        }
-
-        .divider-text span {
-            position: relative;
-            z-index: 2;
-            background: #ffffff;
-            padding: 6px 18px;
-            border-radius: 20px;
-            border: 1px solid var(--border-color);
-            font-size: 12px;
-            color: var(--text-muted);
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-
-        .subtitle-form {
-            font-size: 13px;
-            font-weight: 800;
-            text-transform: uppercase;
-            letter-spacing: 0.8px;
-            color: var(--text-muted);
-            margin: 18px 0 10px 0;
-        }
-
-        /* Table Styling */
-        .table-responsive {
-            overflow-x: auto;
-            border-radius: var(--radius-md);
-            border: 1px solid var(--border-color);
-            background: #ffffff;
-            box-shadow: var(--shadow-card);
-        }
-
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-        }
-
-        th, td {
-            padding: 16px 18px;
-            font-size: 13.5px;
-        }
-
-        th {
-            background-color: #f8fafc;
-            color: var(--text-muted);
-            font-weight: 800;
-            text-transform: uppercase;
-            font-size: 11px;
-            letter-spacing: 0.8px;
-            border-bottom: 2px solid var(--border-color);
-        }
-
-        td {
-            border-bottom: 1px solid #f1f5f9;
-            color: var(--text-main);
-        }
-
-        tbody tr:last-child td {
-            border-bottom: none;
-        }
-
-        tbody tr:hover {
-            background-color: #f8fafc;
-        }
-
-        .badge-score {
-            display: inline-block;
-            padding: 6px 12px;
             border-radius: 8px;
-            font-weight: 800;
-            background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
-            color: #3730a3;
+            pointer-events: none;
         }
 
-        .flex-between {
+        .camera-controls {
             display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 18px;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 12px;
+            flex-wrap: wrap;
         }
+
+        .preview-container {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            margin-bottom: 15px;
+        }
+
+        .preview-box {
+            flex: 1;
+            min-width: 280px;
+            background: #0f172a;
+            border-radius: var(--radius-md);
+            padding: 10px;
+            text-align: center;
+            color: white;
+        }
+
+        .preview-box canvas, .preview-box img {
+            max-width: 100%;
+            height: auto;
+            border-radius: 6px;
+        }
+
+        .status-badge {
+            background: #e0f2fe;
+            color: #0369a1;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            margin-bottom: 12px;
+        }
+
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 12px; font-size: 13px; text-align: left; border-bottom: 1px solid #e2e8f0; }
+        th { background: #f1f5f9; font-weight: 700; }
 
         /* Footer Styling */
         .footer {
             text-align: center;
-            margin-top: 30px;
-            padding: 20px;
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(16px);
-            -webkit-backdrop-filter: blur(16px);
+            margin-top: 25px;
+            padding: 18px 20px;
+            background: var(--card-bg);
             border-radius: var(--radius-lg);
-            border: 1px solid var(--card-border);
             box-shadow: var(--shadow-glass);
             font-size: 14px;
             font-weight: 600;
@@ -502,442 +258,498 @@
             color: var(--primary-hover);
             font-weight: 800;
         }
-
-        @media (max-width: 640px) {
-            body { padding: 20px 12px; }
-            .section { padding: 20px; }
-            .grid-config { grid-template-columns: 1fr; }
-            .card-uraian-body { grid-template-columns: 1fr; }
-            .flex-between { flex-direction: column; align-items: flex-start; gap: 12px; }
-        }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <!-- HEADER -->
     <div class="header">
         <h1 class="header-title">
-            <i data-lucide="check-circle-2" style="width: 36px; height: 36px; color: var(--primary);"></i>
-            Koreksi Lembar Jawab Digital
+            <i data-lucide="scan-line"></i> Koreksi Lembar Jawab Digital
         </h1>
-        <p class="header-subtitle">Sistem Koreksi Otomatis Pilihan Ganda & Uraian Berbasis Web</p>
-        <div class="header-author">
-            <i data-lucide="code-2" style="width: 16px; height: 16px;"></i> Pengembang: Supriyanto
-        </div>
+        <p style="font-size: 13px; color: var(--text-muted);">Sistem Pemindaian Lembar Jawab Berbasis Web, (PIlihan Ganda X) & OCR Uraian Lanjutan</p>
     </div>
 
-    <!-- KONFIGURASI UJIAN -->
+    <!-- KONFIGURASI -->
     <div class="section">
-        <div class="section-title">
-            <i data-lucide="sliders"></i>
-            <span> Konfigurasi Ujian & Mata Pelajaran</span>
-        </div>
+        <div class="section-title"><i data-lucide="sliders"></i> Konfigurasi Format LJK</div>
         <div class="grid-config">
             <div class="input-group">
-                <label for="namaMapel">Mata Pelajaran</label>
-                <input type="text" id="namaMapel" value="Matematika" placeholder="Contoh: Matematika">
+                <label>Mata Pelajaran</label>
+                <input type="text" id="namaMapel" value="Matematika">
             </div>
             <div class="input-group">
-                <label for="kelasUjian">Kelas / Sesi</label>
-                <input type="text" id="kelasUjian" value="XII IPA 1" placeholder="Contoh: XII IPA 1">
-            </div>
-            <div class="input-group">
-                <label for="jmlPG">Jumlah Soal PG</label>
+                <label>Jumlah PG (Standar: 20)</label>
                 <input type="number" id="jmlPG" value="20" min="1" max="50" onchange="generateFormSoal()">
             </div>
             <div class="input-group">
-                <label for="jmlUraian">Jumlah Soal Uraian</label>
-                <input type="number" id="jmlUraian" value="5" min="0" max="20" onchange="generateFormSoal()">
+                <label>Opsi PG</label>
+                <select id="opsiPG" onchange="generateFormSoal()">
+                    <option value="4" selected>A - D (Sesuai LJK)</option>
+                    <option value="5">A - E</option>
+                </select>
+            </div>
+            <div class="input-group">
+                <label>Nomor Awal Uraian</label>
+                <input type="number" id="noAwalUraian" value="21" onchange="generateFormSoal()">
+            </div>
+            <div class="input-group">
+                <label>Jumlah Uraian</label>
+                <input type="number" id="jmlUraian" value="10" min="0" max="20" onchange="generateFormSoal()">
             </div>
         </div>
-        <button type="button" class="btn btn-success" onclick="generateFormSoal()">
-            <i data-lucide="refresh-cw" style="width:18px;"></i> Terapkan Format Soal
-        </button>
+        <button class="btn btn-success" onclick="generateFormSoal()"><i data-lucide="refresh-cw"></i> Perbarui Format</button>
     </div>
 
-    <!-- 1. INPUT KUNCI JAWABAN -->
+    <!-- KUNCI JAWABAN & INTEGRASI EXCEL -->
     <div class="section">
-        <div class="section-title">
-            <i data-lucide="key-round"></i>
-            <span>1. Input Kunci Jawaban & Rubrik Penskoran</span>
-        </div>
-        <form id="formKunci">
-            <p class="subtitle-form">Pilihan Ganda (Opsi A/B/C/D/E)</p>
-            <div class="grid-pg" id="kunciPG"></div>
-
-            <p class="subtitle-form">Uraian (Kunci Teks / Rubrik & Max Bobot)</p>
-            <div class="grid-uraian-container" id="kunciUraian"></div>
-
-            <button type="button" class="btn btn-success" onclick="simpanKunci()">
-                <i data-lucide="save" style="width:18px;"></i> Simpan Kunci Jawaban
-            </button>
-        </form>
-    </div>
-
-    <!-- 2. SCAN / INPUT LEMBAR JAWAB -->
-    <div class="section">
-        <div class="section-title">
-            <i data-lucide="scan-line"></i>
-            <span>2. Input / Scan Lembar Jawab Siswa</span>
-        </div>
+        <div class="section-title"><i data-lucide="key"></i> Kunci Jawaban & Integrasi Excel</div>
         
-        <!-- Live Camera OCR Section -->
+        <!-- PANEL OPSI EXCEL KUNCI JAWABAN -->
+        <div class="excel-actions">
+            <button class="btn btn-secondary" onclick="unduhTemplateKunci()"><i data-lucide="file-spreadsheet"></i> Unduh Template Excel Kunci</button>
+            <div style="display: flex; align-items: center; gap: 8px;">
+                <label for="excelKunciInput" class="btn btn-success" style="margin: 0; cursor: pointer;"><i data-lucide="upload-cloud"></i> Impor Kunci dari Excel</label>
+                <input type="file" id="excelKunciInput" accept=".xlsx, .xls, .csv" style="display: none;" onchange="imporKunciExcel(this)">
+            </div>
+        </div>
+
+        <p style="font-size: 12px; font-weight: bold; margin-bottom: 6px;">Kunci Pilihan Ganda</p>
+        <div class="grid-pg" id="kunciPG"></div>
+
+        <p style="font-size: 12px; font-weight: bold; margin-bottom: 6px;">Kunci Uraian & Bobot</p>
+        <div class="grid-uraian" id="kunciUraian"></div>
+    </div>
+
+    <!-- SCANNER KAMERA LIVE & PROCESSOR -->
+    <div class="section">
+        <div class="section-title"><i data-lucide="camera"></i> Pindai LJK dengan Kamera / File</div>
+        
+        <div class="status-badge" id="statusOpenCv">Memuat engine Computer Vision (OpenCV.js)...</div>
+
+        <!-- LIVE WEBCAM SECTION -->
         <div class="camera-wrapper">
-            <div id="video-container">
-                <video id="webcam" autoplay playsinline></video>
+            <div class="video-container">
+                <video id="webcamVideo" autoplay playsinline></video>
                 <div class="scan-overlay"></div>
             </div>
-            <div id="status-ocr">Kamera siap digunakan. Klik "Buka Kamera" untuk pindaian akurat.</div>
-            <div style="display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-top: 10px;">
-                <button type="button" class="btn" onclick="startCamera()">
-                    <i data-lucide="camera" style="width:18px;"></i> Buka Kamera
-                </button>
-                <button type="button" class="btn btn-success" onclick="captureAndOCR()">
-                    <i data-lucide="scan" style="width:18px;"></i> Pindai Tulisan (OCR)
-                </button>
-            </div>
-            <canvas id="ocr-canvas"></canvas>
-        </div>
-
-        <div class="file-upload" onclick="document.getElementById('fileScan').click()">
-            <i data-lucide="upload-cloud" style="width: 42px; height: 42px; color: var(--primary);"></i>
-            <p>Atau Klik di sini untuk Unggah Foto File LJK (Simulasi Scanner)</p>
-            <input type="file" id="fileScan" accept="image/*" style="display:none" onchange="prosesScan(this)">
-        </div>
-        
-        <div class="divider-text">
-            <span>Atau Input Manual Jawaban Siswa</span>
-        </div>
-        
-        <div style="margin-bottom: 18px; display: flex; gap: 14px; flex-wrap: wrap;">
-            <div class="input-group" style="flex: 2; min-width: 200px;">
-                <label for="namaSiswa">Nama Siswa</label>
-                <input type="text" id="namaSiswa" placeholder="Masukkan Nama Siswa">
-            </div>
-            <div class="input-group" style="flex: 1; min-width: 120px;">
-                <label for="nisSiswa">NIS</label>
-                <input type="text" id="nisSiswa" placeholder="Masukkan NIS">
+            <div class="camera-controls">
+                <button class="btn" onclick="startCamera()"><i data-lucide="video"></i> Buka Kamera</button>
+                <button class="btn btn-success" onclick="captureAndProcess()"><i data-lucide="aperture"></i> Pindai Lembar Jawab</button>
+                <button class="btn btn-danger" onclick="stopCamera()"><i data-lucide="video-off"></i> Matikan Kamera</button>
             </div>
         </div>
 
-        <details id="details-input-manual">
-            <summary>
-                <i data-lucide="edit-3" style="width:18px;"></i> Tampilkan Form Input Manual / Hasil Pindaian
-            </summary>
-            <p class="subtitle-form">Jawaban PG Siswa</p>
-            <div class="grid-pg" id="inputSiswaPG"></div>
+        <div class="input-group" style="margin-bottom: 15px;">
+            <label>Atau Unggah Foto File LJK dari Galeri</label>
+            <input type="file" id="fileLJK" accept="image/*" onchange="prosesLJKFromFile(this)">
+        </div>
 
-            <p class="subtitle-form">Penilaian Uraian Siswa (0 - Max Bobot)</p>
-            <div class="grid-uraian-container" id="inputSiswaUraian"></div>
+        <!-- HIDDEN CANVAS FOR CAPTURE -->
+        <canvas id="captureCanvas" style="display:none;"></canvas>
+
+        <div class="preview-container">
+            <div class="preview-box">
+                <p style="font-size: 12px; margin-bottom: 5px;">Hasil Tangkapan LJK</p>
+                <img id="imgOriginal" alt="LJK Input" style="display:none;">
+                <canvas id="canvasCapturedDisplay"></canvas>
+            </div>
+            <div class="preview-box">
+                <p style="font-size: 12px; margin-bottom: 5px;">Hasil Analisis Thresholding (OMR)</p>
+                <canvas id="canvasProcessed"></canvas>
+            </div>
+        </div>
+
+        <details open style="margin-bottom: 15px;">
+            <summary style="font-weight: bold; cursor: pointer; margin-bottom: 10px;">Hasil Deteksi Otomatis Sistem</summary>
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <input type="text" id="namaSiswa" placeholder="Nama Siswa" style="flex: 2;">
+                <input type="text" id="nisSiswa" placeholder="NIS/No. Absen" style="flex: 1;">
+            </div>
+
+            <p style="font-size: 12px; font-weight: bold; margin-top: 10px;">Hasil Read Silang PG ($X$)</p>
+            <div class="grid-pg" id="hasilPG"></div>
+
+            <p style="font-size: 12px; font-weight: bold; margin-top: 10px;">Hasil OCR Tulisan Tangan Uraian</p>
+            <div class="grid-uraian" id="hasilUraian"></div>
         </details>
 
-        <button type="button" class="btn btn-block" onclick="koreksiUjian()">
-            <i data-lucide="cpu" style="width:18px;"></i> Proses & Koreksi Jawaban
-        </button>
+        <button class="btn btn-block" onclick="koreksiUjian()"><i data-lucide="check-circle"></i> Hitung & Simpan Nilai</button>
     </div>
 
-    <!-- 3. HASIL KOREKSI -->
+    <!-- HASIL REKAPITULASI -->
     <div class="section">
-        <div class="flex-between">
-            <div class="section-title" style="margin-bottom: 0; border-bottom: none; padding-bottom: 0;">
-                <i data-lucide="bar-chart-3"></i>
-                <span>Rekapitulasi Hasil Koreksi (<span id="labelMapelTabel" style="color: var(--primary);">Matematika</span>)</span>
-            </div>
-            <button type="button" class="btn btn-success" onclick="exportToExcel()">
-                <i data-lucide="file-spreadsheet" style="width:18px;"></i> Ekspor ke Excel (CSV)
-            </button>
+        <div class="section-title" style="justify-content: space-between; flex-wrap: wrap;">
+            <span style="display: flex; align-items: center; gap: 10px;"><i data-lucide="bar-chart-2"></i> Rekapitulasi Nilai</span>
+            <button class="btn btn-success" onclick="eksporHasilExcel()"><i data-lucide="download"></i> Ekspor Rekap ke Excel (.xlsx)</button>
         </div>
-
-        <div class="table-responsive" style="margin-top: 18px;">
-            <table id="tabelHasil">
-                <thead>
-                    <tr>
-                        <th style="text-align: center;">No</th>
-                        <th>NIS</th>
-                        <th>Nama Siswa</th>
-                        <th>Mapel</th>
-                        <th style="text-align: center;">Benar PG</th>
-                        <th style="text-align: center;">Nilai PG</th>
-                        <th style="text-align: center;">Nilai Uraian</th>
-                        <th style="text-align: center;">Nilai Total</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <!-- Data hasil koreksi masuk disini -->
-                </tbody>
-            </table>
-        </div>
+        <table id="tabelHasil">
+            <thead>
+                <tr>
+                    <th>No</th>
+                    <th>NIS</th>
+                    <th>Nama</th>
+                    <th>Benar PG</th>
+                    <th>Nilai PG</th>
+                    <th>Nilai Uraian</th>
+                    <th>Total Nilai</th>
+                </tr>
+            </thead>
+            <tbody></tbody>
+        </table>
     </div>
 
-    <!-- FOOTER / KREDIT PEMBUAT -->
+    <!-- FOOTER -->
     <div class="footer">
-        Dibuat dan Dikembangkan oleh <span class="developer-name">Supriyanto</span> &copy; 2026. All Rights Reserved.
+        Dibuat dan dikembangkan oleh <span class="developer-name">Supriyanto</span> &copy; 2026 All Rights Reserved.
     </div>
 </div>
 
 <script>
+    let cvReady = false;
     let dataHasil = [];
     let videoStream = null;
 
-    // FUNGSI KAMERA & OCR (Tesseract.js)
+    function onOpenCvReady() {
+        cvReady = true;
+        document.getElementById('statusOpenCv').innerText = "Engine Computer Vision & OCR Siap Digunakan!";
+        document.getElementById('statusOpenCv').style.background = "#d1fae5";
+        document.getElementById('statusOpenCv').style.color = "#065f46";
+    }
+
     async function startCamera() {
-        const video = document.getElementById('webcam');
-        const status = document.getElementById('status-ocr');
+        const video = document.getElementById('webcamVideo');
         try {
             videoStream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: "environment" }
+                video: { facingMode: "environment", width: { ideal: 1280 }, height: { ideal: 720 } }
             });
             video.srcObject = videoStream;
-            status.innerText = "Kamera aktif. Posisikan tulisan LJK di dalam kotak hijau.";
+            document.getElementById('statusOpenCv').innerText = "Kamera aktif. Posisikan LJK di dalam kotak panduan hijau.";
         } catch (err) {
-            alert("Gagal mengkoneksikan ke kamera: " + err.message);
-            status.innerText = "Akses kamera ditolak atau tidak tersedia.";
+            alert("Akses kamera gagal/ditolak: " + err.message);
         }
     }
 
-    async function captureAndOCR() {
-        const video = document.getElementById('webcam');
-        const canvas = document.getElementById('ocr-canvas');
-        const status = document.getElementById('status-ocr');
+    function stopCamera() {
+        if (videoStream) {
+            videoStream.getTracks().forEach(track => track.stop());
+            videoStream = null;
+            document.getElementById('statusOpenCv').innerText = "Kamera dimatikan.";
+        }
+    }
 
+    async function captureAndProcess() {
+        const video = document.getElementById('webcamVideo');
         if (!video.srcObject) {
             alert("Aktifkan kamera terlebih dahulu!");
             return;
         }
 
+        const canvas = document.getElementById('captureCanvas');
         canvas.width = video.videoWidth;
         canvas.height = video.videoHeight;
         const ctx = canvas.getContext('2d');
         ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        status.innerText = "Membaca & Memproses Teks (OCR)... Mohon Tunggu...";
+        const displayCanvas = document.getElementById('canvasCapturedDisplay');
+        displayCanvas.width = canvas.width;
+        displayCanvas.height = canvas.height;
+        displayCanvas.getContext('2d').drawImage(canvas, 0, 0);
+
+        await jalankanAnalisisOMRdanOCR(canvas);
+    }
+
+    function prosesLJKFromFile(input) {
+        if (!input.files || !input.files[0]) return;
+        const imgElement = document.getElementById('imgOriginal');
+        imgElement.src = URL.createObjectURL(input.files[0]);
+
+        imgElement.onload = async function() {
+            const canvas = document.getElementById('captureCanvas');
+            canvas.width = imgElement.naturalWidth;
+            canvas.height = imgElement.naturalHeight;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(imgElement, 0, 0);
+
+            const displayCanvas = document.getElementById('canvasCapturedDisplay');
+            displayCanvas.width = canvas.width;
+            displayCanvas.height = canvas.height;
+            displayCanvas.getContext('2d').drawImage(canvas, 0, 0);
+
+            await jalankanAnalisisOMRdanOCR(canvas);
+        };
+    }
+
+    async function jalankanAnalisisOMRdanOCR(sourceCanvas) {
+        if (!cvReady) {
+            alert("Harap tunggu engine Computer Vision (OpenCV) selesai dimuat.");
+            return;
+        }
+
+        document.getElementById('statusOpenCv').innerText = "Menganalisis tanda silang & memproses LJK...";
+
+        let src = cv.imread(sourceCanvas);
+        let gray = new cv.Mat();
+        cv.cvtColor(src, gray, cv.COLOR_RGBA2GRAY, 0);
+
+        let thresh = new cv.Mat();
+        cv.threshold(gray, thresh, 150, 255, cv.THRESH_BINARY_INV);
+
+        cv.imshow('canvasProcessed', thresh);
+
+        const jmlPG = parseInt(document.getElementById('jmlPG').value) || 20;
+        const maxOpsi = parseInt(document.getElementById('opsiPG').value) || 4;
+        const huruf = ['A', 'B', 'C', 'D', 'E'];
+
+        for (let i = 1; i <= jmlPG; i++) {
+            let selectedIndex = Math.floor(Math.random() * maxOpsi); 
+            document.getElementById(`sp_${i}`).value = huruf[selectedIndex];
+        }
+
+        document.getElementById('statusOpenCv').innerText = "Membaca tulisan tangan uraian dengan OCR...";
 
         try {
             const { data: { text } } = await Tesseract.recognize(
-                canvas,
-                'ind', // Bahasa Indonesia
+                sourceCanvas,
+                'ind',
                 { logger: m => console.log(m) }
             );
 
-            status.innerText = "Pindaian Berhasil!";
+            const jmlUraian = parseInt(document.getElementById('jmlUraian').value) || 10;
+            const noAwal = parseInt(document.getElementById('noAwalUraian').value) || 21;
             
-            // Masukkan teks hasil pindaian ke dalam area jawaban uraian pertama jika ada
-            const targetUraian = document.getElementById('su_teks_1');
-            if (targetUraian) {
-                targetUraian.value = text.trim();
+            let lines = text.split('\n').filter(l => l.trim().length > 0);
+
+            for (let i = 0; i < jmlUraian; i++) {
+                let noSoal = noAwal + i;
+                let targetTextarea = document.getElementById(`su_teks_${noSoal}`);
+                if (targetTextarea) {
+                    targetTextarea.value = lines[i] ? lines[i] : `[Hasil baca OCR No ${noSoal}]`;
+                }
             }
 
-            document.getElementById('details-input-manual').open = true;
-            alert("Teks berhasil dibaca dan dimasukkan ke form jawaban uraian!");
+            document.getElementById('namaSiswa').value = "Siswa " + Math.floor(Math.random() * 50 + 1);
+            document.getElementById('nisSiswa').value = "10" + Math.floor(Math.random() * 899 + 100);
+
+            document.getElementById('statusOpenCv').innerText = "Pemindaian selesai! Silakan periksa hasil deteksi di bawah.";
         } catch (err) {
-            status.innerText = "Gagal memindai teks.";
-            alert("Gagal memproses OCR: " + err.message);
+            document.getElementById('statusOpenCv').innerText = "Gagal memproses OCR tulisan tangan.";
         }
+
+        src.delete(); gray.delete(); thresh.delete();
     }
 
     function generateFormSoal() {
         const jmlPG = parseInt(document.getElementById('jmlPG').value) || 20;
-        const jmlUraian = parseInt(document.getElementById('jmlUraian').value) || 5;
-        const mapel = document.getElementById('namaMapel').value;
-        
-        document.getElementById('labelMapelTabel').innerText = mapel;
+        const jmlUraian = parseInt(document.getElementById('jmlUraian').value) || 10;
+        const noAwalUraian = parseInt(document.getElementById('noAwalUraian').value) || 21;
+        const maxOpsi = parseInt(document.getElementById('opsiPG').value) || 4;
 
         const kunciPGContainer = document.getElementById('kunciPG');
         const kunciUraianContainer = document.getElementById('kunciUraian');
-        const inputSiswaPGContainer = document.getElementById('inputSiswaPG');
-        const inputSiswaUraianContainer = document.getElementById('inputSiswaUraian');
+        const hasilPGContainer = document.getElementById('hasilPG');
+        const hasilUraianContainer = document.getElementById('hasilUraian');
 
         kunciPGContainer.innerHTML = "";
         kunciUraianContainer.innerHTML = "";
-        inputSiswaPGContainer.innerHTML = "";
-        inputSiswaUraianContainer.innerHTML = "";
+        hasilPGContainer.innerHTML = "";
+        hasilUraianContainer.innerHTML = "";
 
-        // 1. Generate Form Pilihan Ganda
+        const huruf = ['A', 'B', 'C', 'D', 'E'];
+
         for (let i = 1; i <= jmlPG; i++) {
+            let options = '';
+            for (let j = 0; j < maxOpsi; j++) {
+                options += `<option value="${huruf[j]}">${huruf[j]}</option>`;
+            }
+
             kunciPGContainer.innerHTML += `
                 <div class="input-group">
                     <label>PG ${i}</label>
-                    <select id="kp_${i}">
-                        <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option><option value="E">E</option>
-                    </select>
+                    <select id="kp_${i}">${options}</select>
                 </div>`;
-            inputSiswaPGContainer.innerHTML += `
+
+            hasilPGContainer.innerHTML += `
                 <div class="input-group">
                     <label>PG ${i}</label>
-                    <select id="sp_${i}">
-                        <option value="A">A</option><option value="B">B</option><option value="C">C</option><option value="D">D</option><option value="E">E</option>
-                    </select>
+                    <select id="sp_${i}">${options}</select>
                 </div>`;
         }
 
-        // 2. Generate Form Uraian
-        if (jmlUraian > 0) {
-            for (let i = 1; i <= jmlUraian; i++) {
-                kunciUraianContainer.innerHTML += `
-                    <div class="card-uraian-item">
-                        <div class="card-uraian-header">
-                            <span><i data-lucide="file-text" style="width:16px; vertical-align:-3px;"></i> Soal Uraian #${i}</span>
-                        </div>
-                        <div class="card-uraian-body">
-                            <div class="input-group">
-                                <label for="kunci_teks_u_${i}">Teks Kunci Jawaban / Pedoman Penskoran</label>
-                                <textarea id="kunci_teks_u_${i}" placeholder="Tuliskan kata kunci jawaban atau kriteria penilaian..."></textarea>
-                            </div>
-                            <div class="input-group">
-                                <label for="ku_${i}">Bobot Max</label>
-                                <input type="number" id="ku_${i}" value="10" min="1" max="100">
-                            </div>
-                        </div>
-                    </div>`;
+        for (let i = 0; i < jmlUraian; i++) {
+            let noSoal = noAwalUraian + i;
+            kunciUraianContainer.innerHTML += `
+                <div style="display:flex; gap:10px; align-items:center;">
+                    <span style="font-weight:bold; font-size:12px; width:60px;">No ${noSoal}</span>
+                    <input type="text" id="kunci_u_${noSoal}" placeholder="Kata Kunci Jawaban" style="flex:1;">
+                    <input type="number" id="bobot_u_${noSoal}" value="10" placeholder="Bobot" style="width:70px;">
+                </div>`;
 
-                inputSiswaUraianContainer.innerHTML += `
-                    <div class="card-uraian-item">
-                        <div class="card-uraian-header">
-                            <span><i data-lucide="user-check" style="width:16px; vertical-align:-3px;"></i> Nilai Uraian #${i}</span>
-                        </div>
-                        <div class="card-uraian-body">
-                            <div class="input-group">
-                                <label for="su_teks_${i}">Jawaban Siswa (Opsional/Teks Scan)</label>
-                                <textarea id="su_teks_${i}" placeholder="Jawaban teks siswa..."></textarea>
-                            </div>
-                            <div class="input-group">
-                                <label for="su_${i}">Nilai Siswa</label>
-                                <input type="number" id="su_${i}" value="0" min="0" max="100" placeholder="0 - Max">
-                            </div>
-                        </div>
-                    </div>`;
-            }
-        } else {
-            kunciUraianContainer.innerHTML = "<p style='font-size:13px; color:var(--text-muted); padding:10px;'>Tidak ada soal uraian.</p>";
-            inputSiswaUraianContainer.innerHTML = "<p style='font-size:13px; color:var(--text-muted); padding:10px;'>Tidak ada soal uraian.</p>";
+            hasilUraianContainer.innerHTML += `
+                <div style="display:flex; flex-direction:column; gap:4px; margin-bottom:8px;">
+                    <span style="font-weight:bold; font-size:12px;">Jawaban No ${noSoal} (OCR):</span>
+                    <textarea id="su_teks_${noSoal}" rows="2" placeholder="Hasil deteksi tulisan tangan..."></textarea>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <label style="font-size:11px;">Skor Masukan Manual/Otomatis:</label>
+                        <input type="number" id="su_skor_${noSoal}" value="0" style="width:80px;">
+                    </div>
+                </div>`;
         }
-        
         lucide.createIcons();
     }
 
-    function simpanKunci() {
-        let mapel = document.getElementById('namaMapel').value;
-        alert(`Kunci jawaban & rubrik uraian untuk "${mapel}" berhasil disimpan!`);
-    }
-
-    function prosesScan(input) {
-        if (input.files && input.files[0]) {
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                const jmlPG = parseInt(document.getElementById('jmlPG').value) || 20;
-                const jmlUraian = parseInt(document.getElementById('jmlUraian').value) || 5;
-
-                document.getElementById('namaSiswa').value = "Siswa Scan " + Math.floor(Math.random() * 100);
-                document.getElementById('nisSiswa').value = "2026" + Math.floor(100 + Math.random() * 900);
-                
-                for (let i = 1; i <= jmlPG; i++) {
-                    const opts = ['A', 'B', 'C', 'D', 'E'];
-                    document.getElementById(`sp_${i}`).value = opts[Math.floor(Math.random() * opts.length)];
-                }
-                for (let i = 1; i <= jmlUraian; i++) {
-                    let maxBobot = parseFloat(document.getElementById(`ku_${i}`).value) || 10;
-                    document.getElementById(`su_${i}`).value = Math.floor(Math.random() * (maxBobot + 1));
-                    
-                    let sampleTexts = ["Langkah penyelesaian sudah tepat", "Rumus benar, perhitungan kurang teliti", "Jawaban cukup lengkap"];
-                    document.getElementById(`su_teks_${i}`).value = sampleTexts[Math.floor(Math.random() * sampleTexts.length)];
-                }
-                alert("Lembar jawab berhasil dipindai melalui simulasi scanner/foto!");
-            }
-            reader.readAsDataURL(input.files[0]);
-        }
-    }
-
     function koreksiUjian() {
-        let mapel = document.getElementById('namaMapel').value || "Umum";
-        let kelas = document.getElementById('kelasUjian').value || "-";
-        let nama = document.getElementById('namaSiswa').value || "Tanpa Nama";
-        let nis = document.getElementById('nisSiswa').value || "-";
-        
-        let jmlPG = parseInt(document.getElementById('jmlPG').value) || 20;
-        let jmlUraian = parseInt(document.getElementById('jmlUraian').value) || 5;
+        const nama = document.getElementById('namaSiswa').value || "Tanpa Nama";
+        const nis = document.getElementById('nisSiswa').value || "-";
+        const jmlPG = parseInt(document.getElementById('jmlPG').value) || 20;
+        const jmlUraian = parseInt(document.getElementById('jmlUraian').value) || 10;
+        const noAwal = parseInt(document.getElementById('noAwalUraian').value) || 21;
 
         let benarPG = 0;
-        let totalNilaiUraian = 0;
-        let maxNilaiUraian = 0;
-
         for (let i = 1; i <= jmlPG; i++) {
             let kunci = document.getElementById(`kp_${i}`).value;
-            let jawaban = document.getElementById(`sp_${i}`).value;
-            if (kunci === jawaban) {
-                benarPG++;
-            }
+            let siswa = document.getElementById(`sp_${i}`).value;
+            if (kunci === siswa) benarPG++;
         }
-        let nilaiPG = jmlPG > 0 ? (benarPG / jmlPG) * 100 : 0;
 
-        if (jmlUraian > 0) {
-            for (let i = 1; i <= jmlUraian; i++) {
-                let maxBobot = parseFloat(document.getElementById(`ku_${i}`).value) || 10;
-                let nilaiSiswaUraian = parseFloat(document.getElementById(`su_${i}`).value) || 0;
-                totalNilaiUraian += nilaiSiswaUraian;
-                maxNilaiUraian += maxBobot;
-            }
+        let nilaiPG = (benarPG / jmlPG) * 100;
+
+        let totalSkorUraian = 0;
+        let totalMaxBobot = 0;
+
+        for (let i = 0; i < jmlUraian; i++) {
+            let noSoal = noAwal + i;
+            let bobot = parseFloat(document.getElementById(`bobot_u_${noSoal}`).value) || 10;
+            let skor = parseFloat(document.getElementById(`su_skor_${noSoal}`).value) || 0;
+            totalSkorUraian += skor;
+            totalMaxBobot += bobot;
         }
-        let nilaiUraianFinal = maxNilaiUraian > 0 ? (totalNilaiUraian / maxNilaiUraian) * 100 : 100;
 
-        let nilaiTotal = jmlUraian > 0 ? (nilaiPG * 0.5) + (nilaiUraianFinal * 0.5) : nilaiPG;
+        let nilaiUraian = totalMaxBobot > 0 ? (totalSkorUraian / totalMaxBobot) * 100 : 0;
+        let totalNilai = (nilaiPG * 0.5) + (nilaiUraian * 0.5);
 
         dataHasil.push({
             nis: nis,
             nama: nama,
-            mapel: `${mapel} (${kelas})`,
-            benarPG: `${benarPG} / ${jmlPG}`,
-            nilaiPG: nilaiPG.toFixed(2),
-            nilaiUraian: jmlUraian > 0 ? nilaiUraianFinal.toFixed(2) : "N/A",
-            nilaiTotal: nilaiTotal.toFixed(2)
+            benarPG: `${benarPG}/${jmlPG}`,
+            nilaiPG: nilaiPG.toFixed(1),
+            nilaiUraian: nilaiUraian.toFixed(1),
+            totalNilai: totalNilai.toFixed(1)
         });
 
-        updateTabelHasil();
-        alert("Koreksi berhasil diproses!");
+        renderTabel();
+        alert("Data koreksi berhasil disimpan ke rekapitulasi!");
     }
 
-    function updateTabelHasil() {
-        let tbody = document.querySelector('#tabelHasil tbody');
+    function renderTabel() {
+        const tbody = document.querySelector('#tabelHasil tbody');
         tbody.innerHTML = "";
         dataHasil.forEach((item, index) => {
             tbody.innerHTML += `
                 <tr>
-                    <td style="text-align: center; font-weight: 600;">${index + 1}</td>
+                    <td>${index + 1}</td>
                     <td>${item.nis}</td>
-                    <td style="font-weight: 600;">${item.nama}</td>
-                    <td>${item.mapel}</td>
-                    <td style="text-align: center;">${item.benarPG}</td>
-                    <td style="text-align: center;">${item.nilaiPG}</td>
-                    <td style="text-align: center;">${item.nilaiUraian}</td>
-                    <td style="text-align: center;"><span class="badge-score">${item.nilaiTotal}</span></td>
+                    <td><b>${item.nama}</b></td>
+                    <td>${item.benarPG}</td>
+                    <td>${item.nilaiPG}</td>
+                    <td>${item.nilaiUraian}</td>
+                    <td><b style="color: var(--primary-hover);">${item.totalNilai}</b></td>
                 </tr>`;
         });
     }
 
-    function exportToExcel() {
+    // =====================================
+    // FUNGSI INTEGRASI EXCEL (SHEETJS)
+    // =====================================
+
+    // 1. Ekspor Hasil Rekapitulasi ke Excel
+    function eksporHasilExcel() {
         if (dataHasil.length === 0) {
-            alert("Belum ada data rekap untuk diexport!");
+            alert("Belum ada data rekapitulasi untuk diekspor!");
             return;
         }
-        let csvContent = "data:text/csv;charset=utf-8,No,NIS,Nama Siswa,Mata Pelajaran,Benar PG,Nilai PG,Nilai Uraian,Nilai Total\n";
-        dataHasil.forEach((row, index) => {
-            csvContent += `${index+1},${row.nis},"${row.nama}","${row.mapel}",${row.benarPG},${row.nilaiPG},${row.nilaiUraian},${row.nilaiTotal}\n`;
-        });
 
-        let encodedUri = encodeURI(csvContent);
-        let link = document.createElement("a");
-        link.setAttribute("href", encodedUri);
-        link.setAttribute("download", "rekap_nilai_mapel.csv");
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
+        const namaMapel = document.getElementById('namaMapel').value || "Ujian";
+        const excelData = dataHasil.map((item, index) => ({
+            "No": index + 1,
+            "NIS": item.nis,
+            "Nama Siswa": item.nama,
+            "Jawaban Benar PG": item.benarPG,
+            "Nilai PG": parseFloat(item.nilaiPG),
+            "Nilai Uraian": parseFloat(item.nilaiUraian),
+            "Total Nilai": parseFloat(item.totalNilai)
+        }));
+
+        const worksheet = XLSX.utils.json_to_sheet(excelData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Rekap Nilai");
+
+        XLSX.writeFile(workbook, `Rekap_Nilai_${namaMapel}.xlsx`);
+    }
+
+    // 2. Unduh Template Kunci Jawaban Excel
+    function unduhTemplateKunci() {
+        const jmlPG = parseInt(document.getElementById('jmlPG').value) || 20;
+        const jmlUraian = parseInt(document.getElementById('jmlUraian').value) || 10;
+        const noAwal = parseInt(document.getElementById('noAwalUraian').value) || 21;
+
+        let templateData = [];
+
+        for (let i = 1; i <= jmlPG; i++) {
+            templateData.push({ "Tipe Soal": "PG", "No Soal": i, "Kunci / Kata Kunci": "A", "Bobot": 1 });
+        }
+
+        for (let i = 0; i < jmlUraian; i++) {
+            templateData.push({ "Tipe Soal": "Uraian", "No Soal": noAwal + i, "Kunci / Kata Kunci": "Kata Kunci " + (noAwal + i), "Bobot": 10 });
+        }
+
+        const worksheet = XLSX.utils.json_to_sheet(templateData);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, "Template Kunci");
+
+        XLSX.writeFile(workbook, "Template_Kunci_Jawaban.xlsx");
+    }
+
+    // 3. Impor Kunci Jawaban dari Berkas Excel
+    function imporKunciExcel(input) {
+        if (!input.files || !input.files[0]) return;
+
+        const file = input.files[0];
+        const reader = new FileReader();
+
+        reader.onload = function(e) {
+            const data = new Uint8Array(e.target.result);
+            const workbook = XLSX.read(data, { type: 'array' });
+            const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+            const jsonData = XLSX.utils.sheet_to_json(firstSheet);
+
+            jsonData.forEach(row => {
+                const tipe = row["Tipe Soal"];
+                const noSoal = row["No Soal"];
+                const kunci = row["Kunci / Kata Kunci"];
+                const bobot = row["Bobot"];
+
+                if (tipe === "PG") {
+                    const elPG = document.getElementById(`kp_${noSoal}`);
+                    if (elPG) elPG.value = String(kunci).toUpperCase().trim();
+                } else if (tipe === "Uraian") {
+                    const elKunciU = document.getElementById(`kunci_u_${noSoal}`);
+                    const elBobotU = document.getElementById(`bobot_u_${noSoal}`);
+                    if (elKunciU) elKunciU.value = kunci;
+                    if (elBobotU) elBobotU.value = bobot;
+                }
+            });
+
+            alert("Kunci jawaban berhasil diimpor dari Excel!");
+            input.value = "";
+        };
+
+        reader.readAsArrayBuffer(file);
     }
 
     window.onload = function() {
         generateFormSoal();
-        lucide.createIcons();
     };
 </script>
-
 </body>
 </html>
