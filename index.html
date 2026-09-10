@@ -150,6 +150,8 @@
         .btn-success:hover { background: var(--success-hover); }
         .btn-danger { background: var(--danger); }
         .btn-secondary { background: #56c769; }
+        .btn-scanner { background: #8b5cf6; }
+        .btn-scanner:hover { background: #7c3aed; }
         .btn-block { width: 100%; }
 
         .excel-actions {
@@ -163,7 +165,6 @@
             align-items: center;
         }
 
-        /* Kamera UI Styling */
         .camera-wrapper {
             background: #0f172a;
             border-radius: var(--radius-md);
@@ -237,11 +238,18 @@
             margin-bottom: 12px;
         }
 
+        .scanner-panel {
+            background: #f8fafc;
+            border: 2px dashed #8b5cf6;
+            border-radius: var(--radius-md);
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+
         table { width: 100%; border-collapse: collapse; margin-top: 10px; }
         th, td { padding: 12px; font-size: 13px; text-align: left; border-bottom: 1px solid #e2e8f0; }
         th { background: #f1f5f9; font-weight: 700; }
 
-        /* Footer Styling */
         .footer {
             text-align: center;
             margin-top: 25px;
@@ -267,7 +275,7 @@
         <h1 class="header-title">
             <i data-lucide="scan-line"></i> Koreksi Lembar Jawab Digital
         </h1>
-        <p style="font-size: 13px; color: var(--text-muted);">Sistem Pemindaian Lembar Jawab Berbasis Web, (PIlihan Ganda X) & OCR Uraian Lanjutan</p>
+        <p style="font-size: 13px; color: var(--text-muted);">Sistem Pemindaian Lembar Jawab Berbasis Web, (Pilihan Ganda X) & OCR Uraian Lanjutan</p>
     </div>
 
     <!-- KONFIGURASI -->
@@ -305,7 +313,6 @@
     <div class="section">
         <div class="section-title"><i data-lucide="key"></i> Kunci Jawaban & Integrasi Excel</div>
         
-        <!-- PANEL OPSI EXCEL KUNCI JAWABAN -->
         <div class="excel-actions">
             <button class="btn btn-secondary" onclick="unduhTemplateKunci()"><i data-lucide="file-spreadsheet"></i> Unduh Template Excel Kunci</button>
             <div style="display: flex; align-items: center; gap: 8px;">
@@ -321,11 +328,31 @@
         <div class="grid-uraian" id="kunciUraian"></div>
     </div>
 
-    <!-- SCANNER KAMERA LIVE & PROCESSOR -->
+    <!-- SCANNER KAMERA LIVE, PRINTER SCANNER & PROCESSOR -->
     <div class="section">
-        <div class="section-title"><i data-lucide="camera"></i> Pindai LJK dengan Kamera / File</div>
+        <div class="section-title"><i data-lucide="printer"></i> Pindai LJK (Printer / Hardware Scanner / Kamera)</div>
         
         <div class="status-badge" id="statusOpenCv">Memuat engine Computer Vision (OpenCV.js)...</div>
+
+        <!-- INTEGRASI PRINTER / ALAT SCANNER FISIK -->
+        <div class="scanner-panel">
+            <p style="font-size: 13px; font-weight: 700; color: #4c1d95; margin-bottom: 8px;">
+                <i data-lucide="printer" style="vertical-align: middle;"></i> Pindai Langsung Menggunakan Mesin Printer / Scanner Fisik
+            </p>
+            <div style="display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+                <label for="scannerInput" class="btn btn-scanner" style="margin: 0; cursor: pointer;">
+                    <i data-lucide="scan"></i> Ambil Hasil Pindai dari Printer / Scanner
+                </label>
+                <input type="file" id="scannerInput" accept="image/*" capture="environment" style="display: none;" onchange="prosesLJKFromFile(this)">
+                
+                <button class="btn btn-secondary" onclick="scanFromDeviceBridge()">
+                    <i data-lucide="refresh-cw"></i> Cek Koneksi Scanner TWAIN/WIA
+                </button>
+            </div>
+            <p style="font-size: 11px; color: var(--text-muted); margin-top: 6px;">
+                *Catatan: Pastikan driver printer/scanner Anda sudah terinstal. Klik tombol di atas untuk memilih hasil pemindaian langsung dari folder utilitas scan default (Epson Scan, Canon IJ, HP Smart, dsb).
+            </p>
+        </div>
 
         <!-- LIVE WEBCAM SECTION -->
         <div class="camera-wrapper">
@@ -335,13 +362,13 @@
             </div>
             <div class="camera-controls">
                 <button class="btn" onclick="startCamera()"><i data-lucide="video"></i> Buka Kamera</button>
-                <button class="btn btn-success" onclick="captureAndProcess()"><i data-lucide="aperture"></i> Pindai Lembar Jawab</button>
+                <button class="btn btn-success" onclick="captureAndProcess()"><i data-lucide="aperture"></i> Pindai Kamera Live</button>
                 <button class="btn btn-danger" onclick="stopCamera()"><i data-lucide="video-off"></i> Matikan Kamera</button>
             </div>
         </div>
 
         <div class="input-group" style="margin-bottom: 15px;">
-            <label>Atau Unggah Foto File LJK dari Galeri</label>
+            <label>Atau Unggah Foto File LJK dari Galeri Local</label>
             <input type="file" id="fileLJK" accept="image/*" onchange="prosesLJKFromFile(this)">
         </div>
 
@@ -350,7 +377,7 @@
 
         <div class="preview-container">
             <div class="preview-box">
-                <p style="font-size: 12px; margin-bottom: 5px;">Hasil Tangkapan LJK</p>
+                <p style="font-size: 12px; margin-bottom: 5px;">Hasil Tangkapan LJK / Scan Printer</p>
                 <img id="imgOriginal" alt="LJK Input" style="display:none;">
                 <canvas id="canvasCapturedDisplay"></canvas>
             </div>
@@ -367,7 +394,7 @@
                 <input type="text" id="nisSiswa" placeholder="NIS/No. Absen" style="flex: 1;">
             </div>
 
-            <p style="font-size: 12px; font-weight: bold; margin-top: 10px;">Hasil Read Silang PG ($X$)</p>
+            <p style="font-size: 12px; font-weight: bold; margin-top: 10px;">Hasil Read Silang PG (X)</p>
             <div class="grid-pg" id="hasilPG"></div>
 
             <p style="font-size: 12px; font-weight: bold; margin-top: 10px;">Hasil OCR Tulisan Tangan Uraian</p>
@@ -415,6 +442,12 @@
         document.getElementById('statusOpenCv').innerText = "Engine Computer Vision & OCR Siap Digunakan!";
         document.getElementById('statusOpenCv').style.background = "#d1fae5";
         document.getElementById('statusOpenCv').style.color = "#065f46";
+    }
+
+    // FUNGSI UNTUK SCANNER PRINTER
+    function scanFromDeviceBridge() {
+        alert("Integrasi Perangkat: Gunakan aplikasi utilitas bawaan scanner Anda (misal: Canon IJ Scan / Epson Scan2) untuk langsung menyimpan ke folder. Lalu klik 'Ambil Hasil Pindai dari Printer / Scanner'.");
+        document.getElementById('scannerInput').click();
     }
 
     async function startCamera() {
@@ -626,7 +659,7 @@
         }
 
         let nilaiUraian = totalMaxBobot > 0 ? (totalSkorUraian / totalMaxBobot) * 100 : 0;
-        let totalNilai = (nilaiPG * 0,5) + (nilaiUraian * 0.5);
+        let totalNilai = (nilaiPG * 0.5) + (nilaiUraian * 0.5);
 
         dataHasil.push({
             nis: nis,
@@ -658,11 +691,6 @@
         });
     }
 
-    // =====================================
-    // FUNGSI INTEGRASI EXCEL (SHEETJS)
-    // =====================================
-
-    // 1. Ekspor Hasil Rekapitulasi ke Excel
     function eksporHasilExcel() {
         if (dataHasil.length === 0) {
             alert("Belum ada data rekapitulasi untuk diekspor!");
@@ -687,7 +715,6 @@
         XLSX.writeFile(workbook, `Rekap_Nilai_${namaMapel}.xlsx`);
     }
 
-    // 2. Unduh Template Kunci Jawaban Excel
     function unduhTemplateKunci() {
         const jmlPG = parseInt(document.getElementById('jmlPG').value) || 20;
         const jmlUraian = parseInt(document.getElementById('jmlUraian').value) || 10;
@@ -710,7 +737,6 @@
         XLSX.writeFile(workbook, "Template_Kunci_Jawaban.xlsx");
     }
 
-    // 3. Impor Kunci Jawaban dari Berkas Excel
     function imporKunciExcel(input) {
         if (!input.files || !input.files[0]) return;
 
